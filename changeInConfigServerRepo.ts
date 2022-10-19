@@ -23,24 +23,25 @@ for (const entry of Deno.readDirSync(".")) {
 
   console.log("replacing in " + entry.name);
 
+  const connStringParams = "${com.flowfact.postgres.connectionStringParams}";
+  const urlSuffix = `${serviceName}?ApplicationName=${serviceName}${connStringParams}`;
+  const readUrl = `spring.datasource.read.url=jdbc-secretsmanager:postgresql://\${com.flowfact.postgres.main-cluster.proxy.read.host}/${urlSuffix}`;
+  const writeUrl = `spring.datasource.url=jdbc-secretsmanager:postgresql://\${com.flowfact.postgres.main-cluster.proxy.write.host}/${urlSuffix}`;
   if (fileContent.includes("spring.datasource.read.url=jdbc-secretsmanager")) {
     // replace read url
     let newContent = fileContent.replaceAll(
       /spring\.datasource\.read\.url=jdbc-secretsmanager:postgresql.*/gm,
-      `spring.datasource.read.url=jdbc-secretsmanager:postgresql://\${com.flowfact.postgres.main-cluster.proxy.read.host}/${serviceName}?ApplicationName=${serviceName}\&${com.flowfact.postgres.connectionParams}`
+      readUrl
     );
 
     // replace write url
-    newContent = newContent.replaceAll(
-      /spring\.datasource\.url=jdbc-secretsmanager:postgresql.*/gm,
-      `spring.datasource.url=jdbc-secretsmanager:postgresql://\${com.flowfact.postgres.main-cluster.proxy.write.host}/${serviceName}?ApplicationName=${serviceName}\&${com.flowfact.postgres.connectionParams}`
-    );
+    newContent = newContent.replaceAll(/spring\.datasource\.url=jdbc-secretsmanager:postgresql.*/gm, writeUrl);
     Deno.writeTextFileSync(entry.name, newContent);
   } else {
     // replace write url and also read url
     const newContent = fileContent.replaceAll(
       /spring\.datasource\.url=jdbc-secretsmanager:postgresql.*/gm,
-      `spring.datasource.url=jdbc-secretsmanager:postgresql://\${com.flowfact.postgres.main-cluster.proxy.write.host}/${serviceName}?ApplicationName=${serviceName}\&${com.flowfact.postgres.connectionParams}\nspring.datasource.read.url=jdbc-secretsmanager:postgresql://\${com.flowfact.postgres.main-cluster.proxy.read.host}/${serviceName}?ApplicationName=${serviceName}\&${com.flowfact.postgres.connectionParams}`
+      `${writeUrl}\n${readUrl}`
     );
     Deno.writeTextFileSync(entry.name, newContent);
   }
