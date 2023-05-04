@@ -8,7 +8,7 @@ export async function run(cmdArgs: string[], args?: { printStdOut?: boolean; pri
   const stdErr = new TextDecoder().decode(await p.stderrOutput());
   if ((args?.printStdOut ?? true) && stdOut) console.log(stdOut);
   if ((args?.printStdErr ?? true) && stdErr) console.error(stdErr);
-  return p.status();
+  return { status: await p.status(), stdOut, stdErr };
 }
 
 /**
